@@ -1,0 +1,21 @@
+{
+    "name": "Frc-967-RobotLib",
+    "version": "1",
+    "uuid": "27d5b603-ec71-4576-b639-4eb46f1d9f66",
+    "mavenUrls": [
+      "https://jitpack.io",
+      "https://repo1.maven.org/maven2/",
+      "http://devsite.ctr-electronics.com/maven/release/"
+    ],
+    "jsonUrl": "https://raw.githubusercontent.com/FRC-IronLions-967/RobotLib/master/robotLib.json",
+    "fileName": "robotLib.json",
+    "javaDependencies": [
+      {
+        "groupId": "com.github.FRC-Ironlions-967",
+        "artifactId": "RobotLib",
+        "version": "1"
+      }
+    ],
+    "jniDependencies": [],
+    "cppDependencies": []
+  }

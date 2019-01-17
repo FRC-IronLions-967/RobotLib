@@ -1,0 +1,117 @@
+plugins {
+    id "java-library"
+    id "eclipse"
+    id "idea"
+    id "edu.wpi.first.GradleRIO" version "2019.1.1"
+    id "org.ajoberstar.grgit" version "3.0.0"
+    id "maven"
+}
+
+// Configuration for install task which does the install of robotlib in local maven cache.
+// Also used by Jitpack.
+group = "com.github.FRC-Ironlions-967"
+archivesBaseName = "RobotLib"
+version = "local"	// Version identifier for local maven cache and github releases.
+					// Should stay as local. This allows the robot* projects on the
+					// same PC as RobotLib to pull from the local cache and so consume
+					// RobotLib versions under development and not yet passed through
+					// the release process.
+
+// Instructions on how to build this project:
+// In the main folder of this project (the one with the gradlew.bat file) run the command "./gradlew.bat build" (or "gradlew build" if on a non-Windows platform)
+// The jars will be in the "build" folder under "libs"
+
+// This section is to prevent people from accidently deploying this project to a robot. 
+deploy {
+    for (String task : project.gradle.startParameter.taskNames) {
+        if (task == "deploy")
+            throw new GradleException("This is a library project! You can't deploy it to a robot!")
+    }
+}
+
+// Set this to true to enable desktop support.
+def includeDesktopSupport = false
+
+// Setup eclipse classpath settings, so the javadoc and sources are available in eclipse
+eclipse {
+    classpath {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+// Defining my dependencies. In this case, WPILib (+ friends), and some vendor libraries (NavX, CTRE)
+dependencies {
+    compile wpi.deps.wpilib()
+    compile wpi.deps.vendor.java()
+    nativeZip wpi.deps.vendor.jni(wpi.platforms.roborio)
+    nativeDesktopZip wpi.deps.vendor.jni(wpi.platforms.desktop)
+
+    // For reference, here are a few more of the easy to add libraries not currently used:
+   	//implementation pathfinder() (Jaci's)
+   	//implementation openrioMatchData()
+
+   	// Quick guide to keywords:
+   	// api is for libraries that are expected to be needed in the main robot project.
+   	// implementation is for libraries that will not be needed in the main robot project.
+   	// (Both api and implementation keywords will have the library automatically downloaded with RobotLib)
+   	// compileOnly expects the dependency to be provided somewhere else. (Ex. by a main robot project)
+   	// compile means include in the output library jar (see below).
+}
+
+// These next definitions (branch and hash) attempt to find extra information to add to the the manifest of
+// the robot program jar file.
+
+// Either the name of the current branch, or an empty string if no git repo is found.
+def branch = { ->
+    if (grgit == null) { // If there's no git repo.
+        return ""
+    }
+
+    return grgit.branch.current().getName()
+}
+
+// Either the short hash of the last commit or an empty string if no git repo is found.
+def hash = { ->
+    if (grgit == null) { // If there's no git repo.
+        return ""
+    }
+    
+    return grgit.head().abbreviatedId
+}
+
+// Setting up RobotLib Jar File. In this case, adding version information to jar manifest.
+jar {
+    manifest {
+       	attributes("LibraryVersion": LibraryVersion)	// from gradle.properties file.
+       	attributes("Time": new Date().format("yyyy-MM-dd HH:mm:ss"))
+       	attributes("User": System.getProperty("user.name"))
+       	attributes("Branch": branch())
+       	attributes("Commit": hash())
+	}
+}
+
+// Create Sources Jar
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+// When Javadoc is created (./gradlew.bat javadoc) it will be in this directory in the project folder.
+javadoc {
+    destinationDir = file("doc")
+    title = "RobotLib"
+    options.overview = "src/main/resources/overview.html"
+}
+
+// Create Javadoc Jar
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+// Additional artifacts to publish for JitPack
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
